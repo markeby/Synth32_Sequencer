@@ -1,0 +1,13 @@
+*.vpwhist
+*.vpwhistxml
+*.vtg
+*.bin
+*.elf
+*.map
+*.log
+*.cfg
+*.json
+*.svd
+*-bak
+*.pdf
+output_S3_otg/*
