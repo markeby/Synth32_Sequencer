@@ -10,4 +10,5 @@
 *.svd
 *-bak
 *.pdf
-output_S3_otg/*
+output_esp32s3
+

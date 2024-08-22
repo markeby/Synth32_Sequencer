@@ -22,16 +22,12 @@
 //   debug controls
 //#####################################
 extern bool DebugMidi;
-extern bool DebugI2C;
-extern bool DebugOsc;
-extern bool DebugSynth;
-extern bool DebugDisp;
 
 //#################################################
 //   Alarms and alerts
 //#################################################
-#define HEARTBEAT_PIN       2
-#define BEEP_PIN            15
+#define HEARTBEAT_PIN       38
+#//define HEARTBEAT_PIN       2
 
 //#################################################
 //    Serial 1 MIDI echo out port
@@ -79,8 +75,5 @@ extern uint64_t RunTime;
 #define DA_RANGE            4096
 #define MAX_DA              (DA_RANGE - 1)
 #define NOTES_PER_OCTAVE    12
-
-
-typedef uint8_t  LED_NOTE_MAP;
 
 

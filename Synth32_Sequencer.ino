@@ -1,7 +1,8 @@
-//
-// pinout of ESP32 DevKit found here:
-// https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/
-//
+//#######################################################################
+// Module:     Synth32_Sequencer.ino
+// Creator:    markeby
+// Date:       8/21/2024
+//#######################################################################
 #include <Arduino.h>
 
 #include "Settings.h"
@@ -9,7 +10,7 @@
 #include "Files.h"
 #include "UpdateOTA.h"
 
-SET_LOOP_TASK_STACK_SIZE(16 * 1024);  // 16KB
+//SET_LOOP_TASK_STACK_SIZE(16 * 1024);  // 16KB
 
 
 bool       SystemError          = false;
@@ -21,10 +22,6 @@ float      DeltaTimeMilliAvg    = 0;
 float      LongestTimeMilli     = 0;
 uint64_t   RunTime              = 0;
 bool       DebugMidi            = false;
-bool       DebugI2C             = false;
-bool       DebugOsc             = false;
-bool       DebugSynth           = false;
-bool       DebugDisp            = false;
 
 //#######################################################################
 inline void TimeDelta (void)
@@ -64,34 +61,6 @@ inline bool TickTime (void)
     }
 
 //#######################################################################
-inline void TickState (void)
-    {
-    static uint32_t counter0 = 1;
-
-    if ( --counter0 == 0 )
-        {
-        digitalWrite (HEARTBEAT_PIN, HIGH);     // LED on
-        counter0 = 100;
-        }
-    if ( SystemError || SystemFail )
-        {
-        if ( counter0 % 4 )
-            {
-            digitalWrite (BEEP_PIN, LOW);       // Tone off
-            digitalWrite (HEARTBEAT_PIN, LOW);  // LED off
-            }
-        else
-            {
-            digitalWrite (BEEP_PIN, HIGH);      // Tone on
-            digitalWrite (HEARTBEAT_PIN, HIGH); // LED on
-            }
-        }
-    if ( counter0 == 98 )
-        digitalWrite (HEARTBEAT_PIN, LOW);      // LED off
-    }
-
-
-//#######################################################################
 //#######################################################################
 void setup (void)
     {
@@ -101,19 +70,19 @@ void setup (void)
     printf ("\t>>> Start Settings config...\n");
     Settings.Begin ();    // System settings
 
-    pinMode (HEARTBEAT_PIN, OUTPUT);
-    pinMode (BEEP_PIN,      OUTPUT);
-    digitalWrite (BEEP_PIN, LOW);           // Tone off
-    digitalWrite (HEARTBEAT_PIN, LOW);      // LED off
-
     printf ("\t>>> Startup OTA...\n");
     UpdateOTA.Setup (Settings.GetSSID (), Settings.GetPasswd ());
 
-    printf ("\t>>> Starting Test...\n");
+    printf ("\t>>> Starting file system...\n");
+    delay (1000);
+    if ( Files.Begin () )
+        printf ("*** No Files available\n");
+    else
+       printf ("\t>>> File system ready\n");
 
-    Files.Begin ();
+    delay (1599);
 
-    printf("\t>>> Test ready.\n");
+    printf("\t>>> System ready.\n");
     }
 
 //#######################################################################
@@ -122,14 +91,10 @@ void loop (void)
     static bool first = true;
 
     TimeDelta ();
-    if ( TickTime () )
-        TickState ();
 
     // Wifi connection manager
     if ( !UpdateOTA.WiFiStatus () )
         UpdateOTA.WaitWiFi ();
-
-
 
     UpdateOTA.Loop ();
     Monitor.Loop ();

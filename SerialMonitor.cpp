@@ -9,53 +9,9 @@
 #include "settings.h"
 #include "SerialMonitor.h"
 #include "Files.h"
+#include "FileMidi.h"
 #include "UpdateOTA.h"
 using namespace SERIAL_MONITOR;
-
-//#######################################################################
-void DirctorySpiffs (void)
-    {
-    File root = SPIFFS.open ("/");
-    if ( !root )
-        {
-        Serial << "- failed to open directory" << endl << endl;
-        return;
-        }
-    if ( !root.isDirectory () )
-        {
-        Serial << " - not a directory" << endl << endl;
-        return;
-        }
-
-    Serial << ">>> Getting file names from root." << endl;
-    File file = root.openNextFile ();
-    while ( file )
-        {
-        if ( file.isDirectory () )
-            {
-            Serial << "  DIR : ";
-            Serial <<  file.name () << endl;
-            }
-        else
-            {
-            Serial << "  FILE: ";
-            Serial << file.name ();
-            Serial << "\tSIZE: ";
-            Serial << file.size () << endl;
-            }
-        file = root.openNextFile ();
-        }
-    Serial << endl << endl;
-    }
-
-//#######################################################################
-void PartDump (void)
-    {
-
-    Serial << "**" << endl << endl;
-
-
-    }
 
 //#######################################################################
 inline void DispRunTime (void)
@@ -98,7 +54,6 @@ void MONITOR_C::DumpStats (void)
     Serial << hh << "     Last interval = " << DeltaTimeMilli << " mSec" << endl;
     Serial << hh << "  Average interval = " << DeltaTimeMilliAvg << " mSec" << endl;
     Serial << hh << "  Longest interval = " << LongestTimeMilli << " mSec" << endl;
-    LongestTimeMilli = 0;
     }
 
 //#######################################################################
@@ -161,7 +116,6 @@ bool MONITOR_C::PromptZap (void)
                     ESP.restart ();
                     break;
                 case ZAP2:
-                    Files.Format ();
                     this->Mode (MENU);
                     break;
                 default:
@@ -243,16 +197,6 @@ void MONITOR_C::MenuSel (void)
                     Serial << "  MIDI debugging " << (( DebugMidi ) ? "Enabled" : "Disabled") << endl;
                     this->Mode (MENU);
                     break;
-                case '2':
-                    DebugI2C  = !DebugI2C;
-                    Serial << "  I2C debugging " << (( DebugI2C ) ? "Enabled" : "Disabled") << endl;
-                    this->Mode (MENU);
-                    break;
-                case '3':
-                    DebugOsc   = !DebugOsc;
-                    Serial << "  Oscillator debugging " << (( DebugOsc ) ? "Enabled" : "Disabled") << endl;
-                    this->Mode (MENU);
-                    break;
 
                 case 'S':
                     this->InputString = Settings.GetSSID ();
@@ -264,19 +208,15 @@ void MONITOR_C::MenuSel (void)
                     this->InputPrompt ("  Enter PWD");
                     this->Mode (INPWD);
                     break;
-                case 'F':
-                    this->InputPrompt ("  Formatting file system");
-                    this->Mode (ZAP2);
-                    break;
                 case 'C':
                     this->InputPrompt ("  Clearing Synth settings");
                     this->Mode (ZAP1);
                     break;
                 case 'z':           // Test function #1
-                    DirctorySpiffs ();
+                    Files.ListDirectory ();
+                    this->Mode (MENU);
                     break;
                 case 'x':           // Test function #2
-                    PartDump ();
                     break;
                 case 'c':           // Test function #3
                     break;
@@ -301,8 +241,6 @@ void MONITOR_C::Menu (void)
     Serial << "\t######       Testing        ######" << endl;
     Serial << "\t######   Midi File system   ######" << endl;
     Serial << StateDebug (DebugMidi)  << "\t1   - Debug MIDI interface   " << endl;
-    Serial << StateDebug (DebugI2C)   << "\t2   - Debug I2C interface " << endl;
-    Serial << StateDebug (DebugOsc)   << "\t3   - Debug Oscillators & Noise   " << endl;
     Serial << "\ts   - Dump process Stats" << endl;
     Serial << "\td   - Save debug flags" << endl;
     Serial << "\n";
@@ -312,7 +250,6 @@ void MONITOR_C::Menu (void)
     Serial << "\tv   - Test function #4" << endl;
     Serial << "\tS   - SSID" << endl;
     Serial << "\tP   - Password" << endl;
-    Serial << "\tF   - Format file system" << endl;
     Serial << "\tC   - Clear Synth settings" << endl;
     Serial << "\tF12 - Reset" << endl;
     Serial << endl;

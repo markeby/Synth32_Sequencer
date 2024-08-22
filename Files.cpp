@@ -7,31 +7,87 @@
 #include <Arduino.h>
 #include "Files.h"
 
-//#######################################################################
-static const char* filesReady = "\t>>> File system (SPIFFS) ready.\n";
+using namespace std;
 
 //#######################################################################
 FILES_C::FILES_C () : Ready(false)
     {
+    this->Ready = false;
+    FileList.clear ();
+    NumberFiles = 0;
     }
 
 //#######################################################################
-void FILES_C::Begin ()
+bool FILES_C::Begin ()
     {
-    if ( !SPIFFS.begin (false) )
-        return;
-    printf (filesReady);
+    if ( SD.begin() )
+        {
+        if ( SD.cardType () != CARD_NONE )
+            {
+            if ( this->FetchDirectory () )
+                return (true);
+            }
+        else
+            {
+            printf ("\t**** No SD card found\n");
+            return (true);
+            }
+        }
+    else
+        {
+        printf ("\t**** SD card failed to initialize\n");
+        return (true);
+        }
     Ready = true;
+    return (false);
     }
 
 //#######################################################################
-void FILES_C::Format ()
+bool FILES_C::FetchDirectory ()
     {
-    printf ("\t>>> Formatting file system...\n");
-    if ( !SPIFFS.begin (true) )
-        return;
-    printf (filesReady);
-    Ready = true;
+    File root = SD.open ("/");
+    if ( !root )
+        {
+        printf ("\t**** failed to open directory");
+        return (true);
+        }
+
+    File file;
+    while ( (file = root.openNextFile ()) )
+        {
+        if ( !file.isDirectory () )
+            {
+            String st = file.name ();
+            if ( st.equals("WPSettings.dat") )
+                continue;
+            if ( st.equals("IndexerVolumeGuid") )
+                continue;
+            this->FileList.push_back (st);
+            }
+        }
+
+    this->NumberFiles = this->FileList.size ();
+    if ( this->NumberFiles == 0 )
+        return (true);
+    return (false);
+    }
+
+//#######################################################################
+void FILES_C::ListDirectory ()
+    {
+    int z = 0;
+
+    if ( this-Ready )
+        {
+        printf ("\n\t===============================\n");
+        printf ("\t=========== FILES =============\n");
+        for ( auto const& zs : FileList )
+            {
+            String st = zs;
+            printf ("\t%-2d  %s\n", ++z, st.c_str ());
+            }
+        }
+    printf ("\n");
     }
 
 //#######################################################################

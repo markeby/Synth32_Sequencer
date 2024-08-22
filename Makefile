@@ -8,10 +8,10 @@
 ############################################
 # default platform
 #DOIT := 1
-S3otg := 1
-#S3  := 1
+#S3otg := 1
+S3  := 1
 # Base package name
-PROJECT := SPIFFStest.ino
+PROJECT := Synth32_Sequencer.ino
 
 # Shared files directory
 SHARED := ../Common
@@ -26,11 +26,10 @@ SOURCES := $(PROJECT) Debug.cpp Settings.cpp Files.cpp SerialMonitor.cpp UpdateO
            FileMidi.cpp FileMidiHelper.cpp FileMidiTrack.cpp
 
 # serial port for uploading
-#DEFAULT_PORT := COM3
-DEFAULT_PORT := COM5
+DEFAULT_PORT := COM8
 
 # IP address for uploading
-UPLOAD_OTA := 192.168.1.33
+UPLOAD_OTA := 192.168.1.32
 
 ############################################
 # Configuration for Seeed Studio ESP32c3
@@ -43,8 +42,7 @@ endif
 # Configuration for Wrooom ESP32-S3-WROOM-1
 ############################################
 ifdef S3
-  ESP32 := --fqbn esp32:esp32:esp32s3usbotg
-#  ESP32 := --fqbn esp32:esp32:esp32s3
+  ESP32 := --fqbn esp32:esp32:esp32s3
   OUTPUT := output_esp32s3
 endif
 ############################################

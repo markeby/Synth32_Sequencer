@@ -6,6 +6,11 @@
 #include "FileMidiHelper.h"
 
 //#######################################################################
+  FILE_MIDI_C::FILE_MIDI_C ()
+    {
+    }
+
+//#######################################################################
 void FILE_MIDI_C::initialise (void)
     {
     _trackCount = 0;            // number of tracks in file
