@@ -10,5 +10,5 @@
 *.svd
 *-bak
 *.pdf
-output_esp32s3
+output_doit
 

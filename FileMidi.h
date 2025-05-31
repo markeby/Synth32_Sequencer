@@ -2,28 +2,17 @@
 #pragma once
 #include <FS.h>
 
-// ------------- Configuration Section - START
-
-#define DUMP_DATA           0
-#define SHOW_UNUSED_META    0
 #define MIDI_MAX_TRACKS     32
 #define TRACK_PRIORITY      1
-#define TRACK_SIZE          50
-
-// ------------- Configuration Section - END
+#define TRACK_SIZE          100
+#define MTHD_HDR           "MThd"
+#define MTHD_HDR_SIZE      4
+#define MTRK_HDR           "MTrk"
+#define MTRK_HDR_SIZE      4
 
 #define ARRAY_SIZE(a) (uint32_t)(sizeof(a)/sizeof((a)[0]))
 
-#if DUMP_DATA
-#define DUMPS(s)      printf(F(s))                    // Print a string
-#define DUMP(s, v)  { printf(F(s)); printf(v); }      // Print a value (decimal)
-#define DUMPX(s, x) { printf(F(s)); printf(x,HEX); }  // Print a value (hex)
-#else
-#define DUMPS(s)      // Print a string
-#define DUMP(s, v)    // Print a value (decimal)
-#define DUMPX(s, x)   // Print a value (hex)
-#endif // DUMP_DATA
-
+//#######################################################################
 typedef struct
     {
     byte     track;    // the track this was on
@@ -32,6 +21,7 @@ typedef struct
     byte     data[4];  // the data. Only 'size' bytes are valid
     } midi_event;
 
+//#######################################################################
 typedef struct
     {
     byte     track;     // the track this was on
@@ -39,6 +29,7 @@ typedef struct
     byte     data[TRACK_SIZE];  // the data. Only 'size' bytes are valid
     } sysex_event;
 
+//#######################################################################
 typedef struct
     {
     byte     track;     // the track this was on
@@ -51,24 +42,32 @@ typedef struct
         };
     } meta_event;
 
+//#######################################################################
 class FILE_MIDI_C;
 
 class FILE_TRACK_C
     {
+private:
+    File&           _fd;
+    FILE_MIDI_C&    _mf;
+    bool            _Selected;              // Play track if selected
+
 public:
-          FILE_TRACK_C  (void);
+          FILE_TRACK_C  (File& fd, FILE_MIDI_C& mf);
          ~FILE_TRACK_C (void);
     bool      getEndOfTrack (void);
     uint32_t  getLength     (void);
     void      close         (void);
-    bool      getNextEvent  (FILE_MIDI_C& mf, uint16_t tickCount);
-    int       load          (uint8_t trackId, FILE_MIDI_C& mf);
+    bool      getNextEvent  (uint16_t tickCount);
+    int       load          (uint8_t trackId);
     void      restart       (void);
     void      syncTime      (void);
-    void      dump          (void);
+
+    inline void SetSelected     (bool sel)  { _Selected = sel; };
+    inline bool IsSelected      (void)      { return (_Selected); }
 
 protected:
-    void      parseEvent    (FILE_MIDI_C& mf);
+    void      parseEvent    (void);
     void      reset         (void);
 
     byte        _trackId;       // the id for this track
@@ -80,6 +79,7 @@ protected:
     midi_event  _mev;           // data for MIDI callback function - persists between calls for run-on messages
     };
 
+//#######################################################################
 class FILE_MIDI_C
     {
 public:
@@ -101,7 +101,7 @@ public:
     //--------------------------------------------------------------
     void        close               (void);
     bool        isEOF               (void);
-    int         load                (const char* fname);
+    int         Load                (File& fd);
     inline byte getFormat           (void)                  { return (_format); };
     inline byte getTrackCount       (void)                  { return (_trackCount); };
 
@@ -110,19 +110,16 @@ public:
     void restart                    (void);
     bool getNextEvent               (void);
     void processEvents              (uint16_t ticks);
-    inline void looping             (bool bMode)                            { _looping = bMode; }
-    inline bool isLooping           (void)                                  { return (_looping); }
     inline bool isPaused            (void)                                  { return (_paused); }
     inline void setMidiHandler      (void (*mh) (midi_event* pev))          { _midiHandler = mh; };
     inline void setSysexHandler     (void (*sh) (sysex_event* pev))         { _sysexHandler = sh; };
     inline void setMetaHandler      (void (*mh) (const meta_event* mev))    { _metaHandler = mh; };
 
-    //--------------------------------------------------------------
-    void dump (void);
+    FILE_TRACK_C*   _track[MIDI_MAX_TRACKS]; // track data for this file
 
 protected:
     void     calcTickTime   (void);                     // called internally to update the tick time when parameters change
-    void     initialise     (void);                     // initialize class variables all in one place
+    void     Startup        (void);                     // initialize class variables
     void     synchTracks    (void);                     // synchronize the start of all tracks
     uint16_t tickClock      (void);                     // work out the number of ticks since the last event check
 
@@ -138,13 +135,9 @@ protected:
     uint32_t    _lastTickCheckTime;     // the last time (microsec) an tick check was performed
     bool        _synchDone;             // sync up at the start of all tracks
     bool        _paused;                // if true we are currently paused
-    bool        _looping;               // if true we are currently looping
     uint16_t    _tempo;                 // tempo for this file in beats per minute
     int16_t     _tempoDelta;            // tempo offset adjustment in beats per minute
     uint8_t     _timeSignature[2];      // time signature [0] = numerator, [1] = denominator
 
-    // file handling
-    File           _fd;                     // file descriptor
-    FILE_TRACK_C   _track[MIDI_MAX_TRACKS]; // track data for this file
     };
 

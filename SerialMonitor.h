@@ -29,7 +29,7 @@ public:
     bool Detect         (void);
     void Loop           (void);
     void Begin          (void);
-    void Reset          (void);
+    void Reset          (const char* reason);
     };
 }
 

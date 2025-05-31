@@ -120,9 +120,9 @@
             GUID="{218C3706-E0A7-4679-A963-AF165264892B}">
             <F N="Debug.cpp"/>
             <F N="FileMidi.cpp"/>
-            <F N="FileMidiHelper.cpp"/>
             <F N="FileMidiTrack.cpp"/>
             <F N="Files.cpp"/>
+            <F N="FrontEnd.cpp"/>
             <F N="SerialMonitor.cpp"/>
             <F N="Settings.cpp"/>
             <F N="UpdateOTA.cpp"/>
@@ -134,8 +134,8 @@
             <F N="config.h"/>
             <F N="Debug.h"/>
             <F N="FileMidi.h"/>
-            <F N="FileMidiHelper.h"/>
             <F N="Files.h"/>
+            <F N="FrontEnd.h"/>
             <F N="SerialMonitor.h"/>
             <F N="Settings.h"/>
             <F N="UpdateOTA.h"/>

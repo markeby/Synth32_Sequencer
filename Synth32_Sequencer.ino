@@ -8,20 +8,24 @@
 #include "Settings.h"
 #include "SerialMonitor.h"
 #include "Files.h"
+#include "FrontEnd.h"
 #include "UpdateOTA.h"
 
 //SET_LOOP_TASK_STACK_SIZE(16 * 1024);  // 16KB
 
 
-bool       SystemError          = false;
-bool       SystemFail           = false;
-bool       SynthActive          = false;
-float      DeltaTimeMilli       = 0;             // Millisecond interval.
-float      DeltaTimeMicro       = 0;             // Microsecond interval
-float      DeltaTimeMilliAvg    = 0;
-float      LongestTimeMilli     = 0;
-uint64_t   RunTime              = 0;
-bool       DebugMidi            = false;
+bool        SystemError         = false;
+bool        SystemFail          = false;
+bool        SynthActive         = false;
+float       DeltaTimeMilli      = 0;             // Millisecond interval.
+float       DeltaTimeMicro      = 0;             // Microsecond interval
+float       DeltaTimeMilliAvg   = 0;
+float       LongestTimeMilli    = 0;
+uint64_t    RunTime             = 0;
+int         SkipDelta           = 3;
+bool        DebugMidiFile       = false;
+bool        DebugState          = false;
+bool        DebugMidi           = false;
 
 //#######################################################################
 inline void TimeDelta (void)
@@ -29,15 +33,20 @@ inline void TimeDelta (void)
     static uint64_t strt = 0;       // Starting time for next frame delta calculation
 
     RunTime = micros ();
-    DeltaTimeMicro = (int)((uint64_t)RunTime - (uint64_t)strt);
+    DeltaTimeMicro = RunTime - strt;
     DeltaTimeMilli = MICRO_TO_MILLI (DeltaTimeMicro);
-    if ( DeltaTimeMilliAvg == 0 )
-        DeltaTimeMilliAvg = DeltaTimeMilli;
-    else
-        DeltaTimeMilliAvg = (DeltaTimeMilliAvg + DeltaTimeMilli) / 2;
     strt = RunTime;
-    if ( DeltaTimeMilli > 210 )     // throw out long serial debug outputs
+
+    if ( SkipDelta )
+        {
+        SkipDelta--;
+        DeltaTimeMilliAvg = DeltaTimeMilli;
+        LongestTimeMilli = 0;
         return;
+        }
+
+    DeltaTimeMilliAvg = (DeltaTimeMilliAvg + DeltaTimeMilli) / 2;
+
     if ( DeltaTimeMilli > LongestTimeMilli )
         LongestTimeMilli = DeltaTimeMilli;
     }
@@ -74,14 +83,10 @@ void setup (void)
     UpdateOTA.Setup (Settings.GetSSID (), Settings.GetPasswd ());
 
     printf ("\t>>> Starting file system...\n");
-    delay (1000);
-    if ( Files.Begin () )
-        printf ("*** No Files available\n");
-    else
-       printf ("\t>>> File system ready\n");
 
-    delay (1599);
+    delay (400);
 
+    FrontEnd.Begin ();
     printf("\t>>> System ready.\n");
     }
 
@@ -96,6 +101,7 @@ void loop (void)
     if ( !UpdateOTA.WiFiStatus () )
         UpdateOTA.WaitWiFi ();
 
+    FrontEnd.Process ();
     UpdateOTA.Loop ();
     Monitor.Loop ();
     }

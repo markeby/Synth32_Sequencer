@@ -73,14 +73,18 @@ bool SETTINGS_C::GetDebugSwitch (uint8_t num)
 //#######################################################################
 void SETTINGS_C::SaveDebugFlags ()
     {
-    this->PutDebugSwitch (0, DebugMidi);
+    this->PutDebugSwitch (0, DebugMidiFile);
+    this->PutDebugSwitch (1, DebugState);
+    this->PutDebugSwitch (2, DebugMidi);
     }
 
 //#######################################################################
 void SETTINGS_C::RestoreDebugFlags ()
     {
     this->DebugFlags = true;
-    DebugMidi   = this->GetDebugSwitch (0);
+    DebugMidiFile    = this->GetDebugSwitch (0);
+    DebugState       = this->GetDebugSwitch (1);
+    DebugMidi        = this->GetDebugSwitch (2);
     if ( this->DebugFlags )
         printf ("\t>>> Debug setup.\n");
     else

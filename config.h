@@ -21,6 +21,8 @@
 //#####################################
 //   debug controls
 //#####################################
+extern bool DebugMidiFile;
+extern bool DebugState;
 extern bool DebugMidi;
 
 //#################################################
@@ -33,13 +35,7 @@ extern bool DebugMidi;
 //    Serial 1 MIDI echo out port
 //#################################################
 #define RXD1        35
-#define TXD1        32
-
-//#################################################
-//    Serial 2 MIDI echo out port
-//#################################################
-#define RXD2        16
-#define TXD2        17
+#define TXD1        22
 
 //#################################################
 //    Display message parameters and I2C
@@ -66,6 +62,7 @@ extern float    DeltaTimeMicro;
 extern float    LongestTimeMilli;
 extern float    DeltaTimeMilliAvg;
 extern uint64_t RunTime;
+extern int      SkipDelta;
 
 //#################################################
 //    Synth specific constants

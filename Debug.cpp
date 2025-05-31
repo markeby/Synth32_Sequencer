@@ -10,6 +10,8 @@
 #include "Debug.h"
 using namespace std;
 
+String DebugStr;            // Storage for current debug frame
+
 //#######################################################################
 const String vFormat (const char *const zcFormat, ...)
     {
@@ -66,24 +68,31 @@ void DebugMsg (const char* label, uint8_t index, const char *const fmt, ...)
     }
 
 //#######################################################################
-void DebugMsgN (const char* label, uint8_t index, String name,  const char *const fmt, ...)
+void DebugMsgStart (const char* label, uint8_t index, String name,  const char *const fmt, ...)
     {
     va_list ap;
     va_start (ap, fmt);
 
-    String str = "[" + String(label) + "-" + String(index) + "]{";
-    str += name + "} " + vsFormat (fmt, ap);
-    Serial << str << endl;
+    if ( index == DEBUG_NO_INDEX )
+        DebugStr = "[" + String(label) + "] ";
+    else
+        DebugStr = "[" + String(label) + "-" + String(index) + "] ";
+    DebugStr += vsFormat (fmt, ap);
     }
 
 //#######################################################################
-void DebugMsgF (const char* label, uint8_t index, String name, char* flag, const char *const fmt, ...)
+void DebugMsgDataF (uint32_t data, uint8_t lead)
     {
-    va_list ap;
-    va_start (ap, fmt);
+    char fmt[12];
 
-    String str = "[" + String(label) + "-" + String(index) + "]{" + name;
-    str += "} - " + String(flag) + " - " + vsFormat (fmt, ap);
-    Serial << str << endl;
+    sprintf (fmt, "%%#0%dX ", lead);
+    DebugStr += vFormat (fmt, data);
+    }
+
+//#######################################################################
+void DebugMsgClose ()
+    {
+    Serial << DebugStr << endl;
+    DebugStr.clear ();
     }
 

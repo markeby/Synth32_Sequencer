@@ -7,29 +7,26 @@
 # User supplied and default parameters
 ############################################
 # default platform
-#DOIT := 1
+DOIT := 1
 #S3otg := 1
-S3  := 1
+#S3  := 1
 # Base package name
 PROJECT := Synth32_Sequencer.ino
 
-# Shared files directory
-SHARED := ../Common
-
 # header files
-INCLUDES := Debug.h SerialMonitor.h Settings.h UpdateOTA.h \
-            FileMidi.h FileMidiHelper.h
+INCLUDES := Debug.h SerialMonitor.h Settings.h UpdateOTA.h FrontEnd.h \
+            FileMidi.h Files.h config.h
 	   
 
 # source files
 SOURCES := $(PROJECT) Debug.cpp Settings.cpp Files.cpp SerialMonitor.cpp UpdateOTA.cpp \
-           FileMidi.cpp FileMidiHelper.cpp FileMidiTrack.cpp
+           FrontEnd.cpp FileMidi.cpp FileMidiTrack.cpp
 
 # serial port for uploading
-DEFAULT_PORT := COM8
+DEFAULT_PORT := COM15
 
 # IP address for uploading
-UPLOAD_OTA := 192.168.1.32
+UPLOAD_OTA := 192.168.2.22
 
 ############################################
 # Configuration for Seeed Studio ESP32c3
@@ -89,7 +86,7 @@ endif
 ############################################
 # User input targets
 ############################################
-PHONY: testOTA lab c3 monitor clean
+PHONY: monitor clean
 
 Midi32_OTA :
 	@$(MAKE) target OTA=$(UPLOAD_OTA)

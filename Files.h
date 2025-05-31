@@ -5,27 +5,38 @@
 // Date:       8/16/2024
 //#######################################################################
 #pragma once
-#include <list>
+#include <deque>
+#include <FS.h>
+#include <SD.h>
+
 #include "config.h"
-#include "FS.h"
-#include "SD.h"
+#include "FileMidi.h"
+
+uint32_t readMultiByte  (File& fd, uint8_t len);
+uint32_t readVarLen     (File& fd);
 
 //#######################################################################
 class FILES_C
     {
 private:
     bool                Ready;
-    std::list<String>   FileList;
+    std::deque<String>  FileList;
     int                 NumberFiles;
+    File                FileDescripter;
 
     bool FetchDirectory (void);
 
+
 public:
-         FILES_C        (void);
-    bool Begin          (void);
-    void ListDirectory  (void);
+    FILE_MIDI_C     MidiF;
+
+            FILES_C         (void);
+    bool    Begin           (void);
+    bool    OpenFile        (String& fname);
+    String  FetchFileName   (int index);
+    bool    Process         (void);
+
+
     };
 
-//#######################################################################
-extern FILES_C Files;
 

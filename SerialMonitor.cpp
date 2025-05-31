@@ -5,7 +5,6 @@
 // Date:       9/4/2023
 //#######################################################################
 #include <Arduino.h>
-#include <chip-debug-report.h>
 #include "settings.h"
 #include "SerialMonitor.h"
 #include "Files.h"
@@ -43,17 +42,28 @@ void MONITOR_C::DumpStats (void)
     static const char* hh = " ## ";
 
     Serial << "==========================================" << endl;
-    printBeforeSetupInfo ();
+    Serial << hh << ESP.getChipModel () << " rev " << ESP.getChipRevision () << ", ";
+    Serial << hh << ESP.getChipCores () << " cores.  " << ESP.getCpuFreqMHz () << " MHz" << endl;
+    Serial << hh << " SDK " << ESP.getSdkVersion () << endl;
+    Serial << hh << "       Sketch size = " << ESP.getSketchSize () << endl;
+    Serial << hh << "         Heap size = " << ESP.getHeapSize () << endl;
+    Serial << hh << " Minimum heap size = " << ESP.getMinFreeHeap () << endl;
+//    Serial << hh << "  Max alloced Heap = " << ESP.getMaxAllocHeap () << endl;
+    Serial << hh << "         Free heap = " << ESP.getFreeHeap () << endl;
     Serial << "==========================================" << endl << endl;
+    Serial << hh << " Free sketch space = " << ESP.getFreeSketchSpace () << endl;
+    Serial << hh << "   Flash chip size = " << ESP.getFlashChipSize () << endl;
+    Serial << hh << "  Flash chip speed = " << ESP.getFlashChipSpeed() << endl;
+    Serial << hh << "   Flash chip mode = " << ESP.getFlashChipMode() << endl << endl;  Serial << "==========================================" << endl << endl;
     Serial << hh << "        Stack size = " << getArduinoLoopTaskStackSize() << endl;
     Serial << hh << "  Free stack space = " << uxTaskGetStackHighWaterMark(NULL) << endl << endl;
-    printAfterSetupInfo ();
     Serial << "==========================================" << endl << endl;
     Serial << hh << "        Update URL = " << UpdateOTA.GetIP() << endl << endl;
     Serial << hh << "       Runing Time = "; DispRunTime ();
     Serial << hh << "     Last interval = " << DeltaTimeMilli << " mSec" << endl;
     Serial << hh << "  Average interval = " << DeltaTimeMilliAvg << " mSec" << endl;
     Serial << hh << "  Longest interval = " << LongestTimeMilli << " mSec" << endl;
+    SkipDelta = 3;
     }
 
 //#######################################################################
@@ -89,12 +99,9 @@ void MONITOR_C::Tuning ()
     }
 
 //#######################################################################
-void MONITOR_C::Reset ()
+void MONITOR_C::Reset (const char* reason)
     {
-    Serial << endl << "  ********** Reset requested **********";
-    Serial << endl << endl;
-    Serial << endl << endl;
-    Serial << endl << endl;
+    Serial << endl << "  ********** " << reason << " **********" << endl << endl;
     ESP.restart ();
     }
 
@@ -112,8 +119,8 @@ bool MONITOR_C::PromptZap (void)
                 {
                 case ZAP1:
                     Settings.ClearAllSynth();
-                    Serial << 9 << endl << "\nCleared Synth settings." << endl;
-                    ESP.restart ();
+                    Serial << 9 << endl << "\nCleared System settings." << endl;
+                    this->Reset ("Reset after clearing settings");
                     break;
                 case ZAP2:
                     this->Mode (MENU);
@@ -159,7 +166,7 @@ void MONITOR_C::MenuSel (void)
                 case 126:           // 0x7E
                     if ( funct == 3 )
                         {
-                        ESP.restart ();
+                        this->Reset ("F12 reset");
                         }
                     break;
                 case 0x41:          // arrow up
@@ -193,8 +200,18 @@ void MONITOR_C::MenuSel (void)
                     this->Mode (MENU);
                     break;
                 case '1':
+                    DebugState  = !DebugState;
+                    Serial << "  MIDI debugging " << (( DebugState ) ? "Enabled" : "Disabled") << endl;
+                    this->Mode (MENU);
+                    break;
+                case '2':
+                    DebugMidiFile  = !DebugMidiFile;
+                    Serial << "  MIDI file processing " << (( DebugMidiFile ) ? "Enabled" : "Disabled") << endl;
+                    this->Mode (MENU);
+                    break;
+                case '3':
                     DebugMidi  = !DebugMidi;
-                    Serial << "  MIDI debugging " << (( DebugMidi ) ? "Enabled" : "Disabled") << endl;
+                    Serial << "  MIDI Interface " << (( DebugMidi ) ? "Enabled" : "Disabled") << endl;
                     this->Mode (MENU);
                     break;
 
@@ -213,8 +230,6 @@ void MONITOR_C::MenuSel (void)
                     this->Mode (ZAP1);
                     break;
                 case 'z':           // Test function #1
-                    Files.ListDirectory ();
-                    this->Mode (MENU);
                     break;
                 case 'x':           // Test function #2
                     break;
@@ -240,7 +255,9 @@ void MONITOR_C::Menu (void)
     Serial << endl;
     Serial << "\t######       Testing        ######" << endl;
     Serial << "\t######   Midi File system   ######" << endl;
-    Serial << StateDebug (DebugMidi)  << "\t1   - Debug MIDI interface   " << endl;
+    Serial << StateDebug (DebugState)    << "\t1   - Debug State operation" << endl;
+    Serial << StateDebug (DebugMidiFile) << "\t2   - Debug MIDI file processing" << endl;
+    Serial << StateDebug (DebugMidi)     << "\t3   - Debug MIDI interface" << endl;
     Serial << "\ts   - Dump process Stats" << endl;
     Serial << "\td   - Save debug flags" << endl;
     Serial << "\n";
