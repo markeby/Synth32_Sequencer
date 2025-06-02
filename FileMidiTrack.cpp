@@ -20,7 +20,6 @@ void FILE_TRACK_C::reset (void)
 FILE_TRACK_C::FILE_TRACK_C (File& fd, FILE_MIDI_C& mf) : _fd(fd), _mf(mf)
     {
     reset ();
-    this->_Selected = false;
     }
 
 //#######################################################################
@@ -119,17 +118,13 @@ void FILE_TRACK_C::parseEvent ()
         case 0x80 ... 0xBf: // MIDI message with 2 parameters
         case 0xe0 ... 0xef:
             _mev.size = 3;
-            _mev.data[0] = etype;
             _mev.channel = etype & 0x0f;    // mask off the channel
-            _mev.data[0] = etype & 0xf0;    // just the command byte
+            _mev.data[0] = etype;
             _mev.data[1] = _fd.read ();
             _mev.data[2] = _fd.read ();
             DBG ("Event %X %X %X", etype, _mev.data[1], _mev.data[2]);
-            if ( this->_Selected )
-                {
-                if ( _mf._midiHandler != nullptr )
-                    (_mf._midiHandler)(&_mev);
-                }
+            if ( _mf._midiHandler != nullptr )
+                (_mf._midiHandler)(&_mev);
 
             break;
 
@@ -146,11 +141,8 @@ void FILE_TRACK_C::parseEvent ()
                 {
                 DBG ("After touch %X %X", etype, _mev.data[1]);
                 }
-            if ( this->_Selected )
-                {
-                if ( _mf._midiHandler != nullptr )
-                    (_mf._midiHandler)(&_mev);
-                }
+            if ( _mf._midiHandler != nullptr )
+                (_mf._midiHandler)(&_mev);
             break;
 
         case 0x00 ... 0x7f: // MIDI run on message
@@ -169,11 +161,8 @@ void FILE_TRACK_C::parseEvent ()
             for ( byte z = 2;  z < _mev.size;  z++ )
                 _mev.data[z] = _fd.read ();  // next byte
 
-            if ( this->_Selected )
-                {
-                if ( _mf._midiHandler != nullptr )
-                    (_mf._midiHandler)(&_mev);
-                }
+            if ( _mf._midiHandler != nullptr )
+                (_mf._midiHandler)(&_mev);
             }
             break;
 

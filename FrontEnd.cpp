@@ -187,31 +187,6 @@ void FONT_END_C::PlayingSelect ()
     }
 
 //#######################################################################
-void FONT_END_C::SetTrackSelected ()
-    {
-    static const char *marker = "#";
-
-    if ( (this->Selected < 1) || (this->Selected > this->Files.MidiF.getTrackCount ()) )
-        return;
-
-    int y = 16 + (this->Selected * 32);
-    if ( this->Files.MidiF._track[this->Selected]->IsSelected () )
-        {
-        DBG ("Deselect track %d", this->Selected);
-        this->Files.MidiF._track[this->Selected]->SetSelected (false);
-        tFt.setTextColor (tFt.color565 (0x10, 0x10, 0x10));
-        tFt.drawString(marker, 1, y);
-        }
-    else
-        {
-        DBG ("Select track %d", this->Selected);
-        this->Files.MidiF._track[this->Selected]->SetSelected (true);
-        tFt.setTextColor (TFT_WHITE);
-        tFt.drawString(marker, 1, y);
-        }
-    }
-
-//#######################################################################
 void FONT_END_C::OpenSelected ()
     {
     this->OpenFileName = this->Files.FetchFileName (this->Selected);
@@ -221,7 +196,7 @@ void FONT_END_C::OpenSelected ()
     if ( this->Files.OpenFile (this->OpenFileName) )
         this->State = STATE_C::GO_MENU;
     else
-        this->State = STATE_C::GO_TRACK;
+        this->State = STATE_C::GO_PLAY;
     }
 
 //#######################################################################
@@ -235,31 +210,10 @@ void FONT_END_C::Process ()
             this->State = STATE_C::MENU;
             break;
 
-        case STATE_C::GO_TRACK:
-            DBG ("Display track select");
-            this->TrackSelect ();
-            this->State = STATE_C::TRACK;
-            break;
-
         case STATE_C::GO_PLAY:
             DBG ("Display play control");
             this->PlayingSelect ();
             this->State = STATE_C::PLAY;
-            break;
-
-        case STATE_C::TRACK:
-            if ( TouchIt () )
-                {
-                if ( this->TouchY > 47  )
-                    {
-                    this->Selected = ((this->TouchY - 48) / 30) + 1;
-                    DBG ("Track menu select = %d", this->Selected);
-                    this->SetTrackSelected ();
-                    this->IdleWait = 700;
-                    }
-                else if ( this->TouchY < 21 )
-                    this->State = STATE_C::GO_PLAY;
-                }
             break;
 
         case STATE_C::MENU:

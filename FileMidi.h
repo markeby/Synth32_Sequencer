@@ -50,7 +50,6 @@ class FILE_TRACK_C
 private:
     File&           _fd;
     FILE_MIDI_C&    _mf;
-    bool            _Selected;              // Play track if selected
 
 public:
           FILE_TRACK_C  (File& fd, FILE_MIDI_C& mf);
@@ -62,9 +61,6 @@ public:
     int       load          (uint8_t trackId);
     void      restart       (void);
     void      syncTime      (void);
-
-    inline void SetSelected     (bool sel)  { _Selected = sel; };
-    inline bool IsSelected      (void)      { return (_Selected); }
 
 protected:
     void      parseEvent    (void);

@@ -11,7 +11,6 @@
 enum class STATE_C: uint8_t
         {
         GO_MENU = 0,
-        GO_TRACK,
         GO_PLAY,
         MENU,
         TRACK,
@@ -41,7 +40,6 @@ public:
     void Silence            (void);
     bool TouchIt            (void);
     void OpenSelected       (void);
-    void SetTrackSelected   (void);
     void PlayingSelect      (void);
     void TrackSelect        (void);
     void Directory          (void);
