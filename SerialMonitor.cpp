@@ -42,27 +42,32 @@ void MONITOR_C::DumpStats (void)
     static const char* hh = " ## ";
 
     Serial << "==========================================" << endl;
-    Serial << hh << ESP.getChipModel () << " rev " << ESP.getChipRevision () << ", ";
-    Serial << hh << ESP.getChipCores () << " cores.  " << ESP.getCpuFreqMHz () << " MHz" << endl;
-    Serial << hh << " SDK " << ESP.getSdkVersion () << endl;
-    Serial << hh << "       Sketch size = " << ESP.getSketchSize () << endl;
-    Serial << hh << "         Heap size = " << ESP.getHeapSize () << endl;
-    Serial << hh << " Minimum heap size = " << ESP.getMinFreeHeap () << endl;
-//    Serial << hh << "  Max alloced Heap = " << ESP.getMaxAllocHeap () << endl;
-    Serial << hh << "         Free heap = " << ESP.getFreeHeap () << endl;
+    printBeforeSetupInfo ();
     Serial << "==========================================" << endl << endl;
-    Serial << hh << " Free sketch space = " << ESP.getFreeSketchSpace () << endl;
-    Serial << hh << "   Flash chip size = " << ESP.getFlashChipSize () << endl;
-    Serial << hh << "  Flash chip speed = " << ESP.getFlashChipSpeed() << endl;
-    Serial << hh << "   Flash chip mode = " << ESP.getFlashChipMode() << endl << endl;  Serial << "==========================================" << endl << endl;
-    Serial << hh << "        Stack size = " << getArduinoLoopTaskStackSize() << endl;
-    Serial << hh << "  Free stack space = " << uxTaskGetStackHighWaterMark(NULL) << endl << endl;
-    Serial << "==========================================" << endl << endl;
-    Serial << hh << "        Update URL = " << UpdateOTA.GetIP() << endl << endl;
-    Serial << hh << "       Runing Time = "; DispRunTime ();
-    Serial << hh << "     Last interval = " << DeltaTimeMilli << " mSec" << endl;
-    Serial << hh << "  Average interval = " << DeltaTimeMilliAvg << " mSec" << endl;
-    Serial << hh << "  Longest interval = " << LongestTimeMilli << " mSec" << endl;
+    Serial << hh << "total sketch code = " << ESP.getFreeSketchSpace () << endl;
+    Serial << hh << "      sketch size = " << ESP.getSketchSize ()      << endl;
+    Serial << hh << "      sketch used = " << ((ESP.getSketchSize () * 100) / ESP.getFreeSketchSpace ()) << "%" << endl << endl;
+
+    Serial << hh << "        Heap size = " << ESP.getHeapSize ()     << endl;
+    Serial << hh << "larget heap block = " << ESP.getMaxAllocHeap () << endl;
+    Serial << hh << "lowest heap space = " << ESP.getMinFreeHeap ()  << endl;
+    Serial << hh << "  free heap space = " << ESP.getFreeHeap ()     << endl << endl;
+
+    Serial << hh << "       Stack size = " << getArduinoLoopTaskStackSize ()    << endl;
+    Serial << hh << " Free stack space = " << uxTaskGetStackHighWaterMark (NULL) << endl << endl;
+
+    uint64_t zl = ESP.getEfuseMac ();
+    Serial << hh << "       Update MAC = " <<  _WIDTHZ (_HEX ( zl        & 0xFF), 2) <<
+                                      ":" <<  _WIDTHZ (_HEX ((zl >> 8)  & 0xFF), 2) <<
+                                      ":" <<  _WIDTHZ (_HEX ((zl >> 16) & 0xFF), 2) <<
+                                      ":" <<  _WIDTHZ (_HEX ((zl >> 24) & 0xFF), 2) <<
+                                      ":" <<  _WIDTHZ (_HEX ((zl >> 32) & 0xFF), 2) << endl;
+    Serial << hh << "       Update URL = " << UpdateOTA.GetIP() << endl << endl;
+    Serial << hh << "      Runing Time = ";
+    DispRunTime ();
+    Serial << hh << "    Last interval = " << DeltaTimeMilli << " mSec" << endl;
+    Serial << hh << " Average interval = " << DeltaTimeMilliAvg << " mSec" << endl;
+    Serial << hh << " Longest interval = " << LongestTimeMilli << " mSec" << endl;
     SkipDelta = 3;
     }
 
@@ -319,7 +324,7 @@ void MONITOR_C::Begin (void)
     {
     Serial.begin (115200);
     this->DumpStats ();
-    Serial << "\n\n\nHow the hell did I get here man?\n\n\n";
+    Serial << "\n\n\nHow the hell did I get here?\n\n\n";
     }
 
 //#######################################################################
