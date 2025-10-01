@@ -5,6 +5,8 @@
 // Date:       9/4/2023
 //#######################################################################
 #include <Arduino.h>
+#include <chip-debug-report.h>
+
 #include "settings.h"
 #include "SerialMonitor.h"
 #include "Files.h"

@@ -5,13 +5,12 @@
 // Date:       8/16/2024
 //#######################################################################
 #include <Arduino.h>
-#include <TAMC_GT911.h>
-#include <TFT_eSPI.h> // Graphics and font library for ST7735 driver chip
-#include <SPI.h>
+
 #include "Debug.h"
 #include "Files.h"
-#include "FrontEnd.h"
+#include "TouchGT911.h"
 #include "SerialMonitor.h"
+#include "FrontEnd.h"
 
 static const char* Label = "F";
 #define DBG(args...) {if(DebugState){DebugMsg(Label,DEBUG_NO_INDEX,args);}}
@@ -22,22 +21,75 @@ static const char* Label1 = "I";
 #define FILE_TEXT   &FreeSansBoldOblique18pt7b
 #define ITEM_TEXT   &FreeSansOblique12pt7b
 
-#define TOUCH_SDA    33
-#define TOUCH_SCL    32
-#define TOUCH_INT    21
-#define TOUCH_RST    25
-#define TOUCH_WIDTH  480
-#define TOUCH_HEIGHT 320
+static const uint16_t screenWidth  = 320;
+static const uint16_t screenHeight = 480;
 
-static TFT_eSPI tFt  = TFT_eSPI   ();     // Invoke library, pins defined in User_Setup.h
-static TAMC_GT911 touchPanel = TAMC_GT911 (TOUCH_SDA, TOUCH_SCL, TOUCH_INT, TOUCH_RST, TOUCH_WIDTH, TOUCH_HEIGHT);
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf[screenWidth * screenHeight / 6];
+static TFT_eSPI tft = TFT_eSPI ();
 
 //#######################################################################
-void MidiCallback(midi_event *pev)
+static void touchPadRead (lv_indev_drv_t* indev_driver, lv_indev_data_t* data)
+    {
+    uint16_t touchX, touchY;
+
+    bool touched = TouchPanel.Scan ();
+    if ( !touched )
+        data->state = LV_INDEV_STATE_REL;
+    else
+        {
+        /*Set the coordinates*/
+        data->point.x = TouchPanel.GetX ();
+        data->point.y = TouchPanel.GetY ();
+        data->state = LV_INDEV_STATE_PR;
+        }
+    }
+
+//#######################################################################
+static void displayFlush (lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)
+    {
+    uint32_t w = (area->x2 - area->x1 + 1);
+    uint32_t h = (area->y2 - area->y1 + 1);
+
+    tft.startWrite ();
+    tft.setAddrWindow (area->x1, area->y1, w, h);
+    tft.pushColors ((uint16_t *)&color_p->full, w * h, true);
+    tft.endWrite ();
+
+    lv_disp_flush_ready (disp);
+    }
+
+//#######################################################################
+static void eventSelectFile (lv_event_t* e)
+    {
+    lv_event_code_t code = lv_event_get_code (e);
+    if ( code == LV_EVENT_VALUE_CHANGED )
+        {
+        lv_obj_t* obj = lv_event_get_target (e);
+
+        char buf[120];
+        lv_dropdown_get_selected_str (obj, buf, sizeof(buf));
+        FrontEnd.OpenFile (buf);
+        }
+    }
+
+//#######################################################################
+static void eventPlayPause (lv_event_t * e)
+    {
+    lv_event_code_t code = lv_event_get_code (e);
+
+    if ( code == LV_EVENT_VALUE_CHANGED )
+        {
+        lv_obj_t* obj = lv_event_get_target (e);
+        FrontEnd.SetPlaying (lv_obj_get_state (obj) & LV_STATE_CHECKED);
+        }
+    }
+
+//#######################################################################
+void MidiCallback (midi_event *pev)
     {
     if ( (pev->data[0] >= 0x80) && (pev->data[0] < 0xA0) )
         {
-//        Serial1.write (pev->data[0] | pev->channel);
         Serial1.write (pev->data[0]);
         Serial1.write (&pev->data[1], pev->size-1);
         DBGI ("For channel %d Sent %X %X %X", pev->channel, pev->data[0], pev->data[1], pev->data[2]);
@@ -60,34 +112,98 @@ void SysexCallback(sysex_event *pev)
 //#######################################################################
 FONT_END_C::FONT_END_C ()
     {
-    this->Selected = 0;
-    this->State = STATE_C::MENU;
-    this->IdleWait = 0;
-    this->TouchError = 4;
+    FileOpened = false;
+    Playing    = false;
     }
 
 //#######################################################################
 void FONT_END_C::Begin ()
     {
+    // Start MIDI output port
     Serial1.begin (31250, SERIAL_8N1, RXD1, TXD1, false);
 
-    tFt.init ();
-    tFt.setRotation (0);
+    TouchPanel.Begin ();
 
-    touchPanel.setRotation (ROTATION_INVERTED);
-    touchPanel.begin ();
+    lv_init();
 
-    if ( this->Files.Begin () )
-        printf ("*** No Files available\n");
+    tft.begin ();
+    tft.setRotation (0);
+    tft.fillScreen (TFT_RED);
+    delay (500);
+    tft.fillScreen (TFT_GREEN);
+    delay (500);
+    tft.fillScreen (TFT_BLUE);
+    delay (500);
+    tft.fillScreen (TFT_BLACK);
+
+    lv_disp_draw_buf_init (&draw_buf, buf, NULL, screenWidth * screenHeight / 6);
+
+    lv_disp_drv_init (&disp_drv);
+    disp_drv.hor_res = screenWidth;
+    disp_drv.ver_res = screenHeight;
+    disp_drv.flush_cb = displayFlush;
+    disp_drv.draw_buf = &draw_buf;
+    lv_disp_drv_register (&disp_drv);
+
+    lv_indev_drv_init (&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = touchPadRead;
+    lv_indev_drv_register (&indev_drv);
+
+    String str;
+    if ( this->Files.Begin (str) )
+        printf ("*** No Files available ***\n");
     else
         printf ("\t>>> File system ready\n");
 
-    this->Silence ();
-    this->State = STATE_C::GO_MENU;
+    lv_obj_t* panel = lv_obj_create (lv_scr_act ());
+    lv_obj_set_size (panel, screenWidth, screenHeight);
+
+    // Dropdown font
+    lv_style_init (&FontD);
+    lv_style_set_text_font (&FontD, &lv_font_montserrat_18);
+
+    // Button font
+    lv_style_init (&FontButton);
+    lv_style_set_text_font (&FontButton, &lv_font_montserrat_30);
+
+    // Currently selected item font
+    lv_style_init (&FontCurrent);
+    lv_style_set_text_font (&FontCurrent, &lv_font_montserrat_18);
+    lv_style_set_text_color (&FontCurrent, lv_palette_main (LV_PALETTE_DEEP_PURPLE));
+
+    // Setup the dropdown file list
+    pDropDown = lv_dropdown_create (panel);
+    lv_obj_set_width        (pDropDown, 266);
+    lv_obj_align            (pDropDown, LV_ALIGN_TOP_LEFT, 10, 5);
+    lv_obj_add_style        (pDropDown, &FontD, 0);
+    lv_obj_t *dplist = lv_dropdown_get_list (pDropDown);
+    lv_obj_add_style        (dplist, &FontD, 0);
+    lv_dropdown_set_options (pDropDown, str.c_str ());
+    lv_obj_add_event_cb     (pDropDown, eventSelectFile, LV_EVENT_ALL, NULL);
+
+    // Setup the play/pause button
+    pPlayButton = lv_btn_create (panel);
+    lv_obj_add_event_cb (pPlayButton, eventPlayPause, LV_EVENT_ALL, NULL);
+    lv_obj_align        (pPlayButton, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_flag     (pPlayButton, LV_OBJ_FLAG_CHECKABLE);
+    lv_obj_set_height   (pPlayButton, LV_SIZE_CONTENT);
+    lv_obj_t* label = lv_label_create (pPlayButton);
+    lv_label_set_text (label, "Play/Pause");
+    lv_obj_center     (label);
+    lv_obj_add_style  (label, &FontButton, 0);
+
+    // Setup the currently selected file
+    pCurrentFile = lv_label_create (panel);
+    lv_obj_align      (pCurrentFile, LV_ALIGN_BOTTOM_MID, 0, -90);
+    lv_obj_add_style  (pCurrentFile, &FontCurrent, 0);
+    lv_label_set_text (pCurrentFile, "");            // clear the text
+
+    SilenceMidi ();
     }
 
 //#######################################################################
-void FONT_END_C::Silence ()
+void FONT_END_C::SilenceMidi ()
     {
     midi_event ev;
 
@@ -104,139 +220,59 @@ void FONT_END_C::Silence ()
     }
 
 //#######################################################################
-bool FONT_END_C::TouchIt ()
+void FONT_END_C::SetPlaying (bool state)
     {
-    if ( this->TouchError == 0 )
-        Monitor.Reset ("Touch error reset");
-
-    touchPanel.read ();
-
-    if ( this->IdleWait )
-        {
-        this->IdleWait -= DeltaTimeMilli;
-        if ( this->IdleWait < 0 )
-            this->IdleWait = 0;
-        return (false);
-        }
-
-    if ( touchPanel.isTouched )
-        {
-        int z = touchPanel.touches - 1;
-        this->TouchX = touchPanel.points[z].x;
-        this->TouchY = touchPanel.points[z].y;
-        if ( (this->TouchX == -1) && (this->TouchY == -1) )
-            {
-            this->TouchError--;
-            return (false);
-            }
-        DBG ("Touch display state %d   X = %d   Y = %d", (byte)this->State, this->TouchX, this->TouchY);
-        return (true);
-        }
-    return (false);
+    if ( FileOpened )       // File is good so, play
+        Playing = state;
+    else                    // Not a valid file so reset the button
+        lv_obj_clear_state (pPlayButton,  LV_STATE_CHECKED);
     }
 
 //#######################################################################
-void FONT_END_C::Directory ()
+void FONT_END_C::OpenFile (char* name)
     {
-    DBG ("Display directory");
-    tFt.fillScreen (tFt.color565(0x10, 0x10, 0x10));
-    tFt.setTextColor (TFT_WHITE);
-    tFt.setCursor (12, 5);
-    tFt.setFreeFont (TITILE_TEXT);
-    tFt.drawString ("FILES", 90, 8);
-    tFt.drawString ("----------", 78, 28);
+    OpenFileName = name;
+    OpenFileName += ".mid";
 
-    tFt.setFreeFont (ITEM_TEXT);
-    for (int z = 0;  z < 8;  z++ )
-        {
-        String st = this->Files.FetchFileName (z);
-        tFt.drawString (st.c_str (), 18, 70 + (z * 32));
-        }
-    }
+    lv_obj_clear_state (pPlayButton,  LV_STATE_CHECKED);
 
-//#######################################################################
-void FONT_END_C::TrackSelect ()
-    {
-    tFt.fillScreen (tFt.color565 (0x10, 0x10, 0x10));
-    tFt.setTextColor (TFT_WHITE);
-    tFt.setCursor (12, 5);
-    tFt.setFreeFont (FILE_TEXT);
-    tFt.drawString (this->OpenFileName, 18, 1);
-    tFt.setFreeFont (ITEM_TEXT);
-    byte cnt = this->Files.MidiF.getTrackCount ();
-    for (byte z = 1;  z < cnt;  z++ )
-        {
-        String st = "Track " + String (z, DEC);
-        tFt.drawString (st.c_str (), 38, 16 + (z * 32));
-        }
-    }
-
-//#######################################################################
-void FONT_END_C::PlayingSelect ()
-    {
-    DBG ("Play menu display");
-    tFt.fillScreen (tFt.color565(0x10, 0x10, 0x10));
-    tFt.setTextColor (TFT_WHITE);
-    tFt.setCursor (12, 5);
-    tFt.setFreeFont (TITILE_TEXT);
-    tFt.drawString ("PLAYING", 68, 8);
-    tFt.drawString ("-------------", 58, 28);
-
-    tFt.setFreeFont (FILE_TEXT);
-    tFt.drawString (this->OpenFileName, 18, 70);
-    }
-
-//#######################################################################
-void FONT_END_C::OpenSelected ()
-    {
-    this->OpenFileName = this->Files.FetchFileName (this->Selected);
-    if ( this->OpenFileName.isEmpty () )
+    lv_label_set_text (pCurrentFile, "");            // clear the text
+    if ( OpenFileName.isEmpty () )
         return;
-    DBG("Selected file: %s", this->OpenFileName.c_str());
-    if ( this->Files.OpenFile (this->OpenFileName) )
-        this->State = STATE_C::GO_MENU;
-    else
-        this->State = STATE_C::GO_PLAY;
+    OpenFile ();
+    lv_label_set_text_fmt (pCurrentFile, "%s\n  Tracks: %d", name, Files.GetTrackCount ());
+    }
+
+//#######################################################################
+void FONT_END_C::OpenFile ()
+    {
+    DBG("Selected file: %s", OpenFileName.c_str());
+    if ( !Files.OpenFile (OpenFileName) )
+        FileOpened = true;
     }
 
 //#######################################################################
 void FONT_END_C::Process ()
     {
-    switch ( this->State )
+    lv_timer_handler ();
+
+    if ( Playing )
         {
-        case STATE_C::GO_MENU:
-            DBG ("Display menu of files");
-            this->Directory ();
-            this->State = STATE_C::MENU;
-            break;
-
-        case STATE_C::GO_PLAY:
-            DBG ("Display play control");
-            this->PlayingSelect ();
-            this->State = STATE_C::PLAY;
-            break;
-
-        case STATE_C::MENU:
-            if ( TouchIt () )
-                {
-                if ( this->TouchY > 71  )
-                    {
-                    this->Selected = (this->TouchY - 72) / 30;
-                    DBG ("File menu select = %d", this->Selected);
-                    this->OpenSelected ();
-                    this->IdleWait = 700;
-                    }
-                }
-            break;
-
-        case STATE_C::PLAY:
-            if ( this->Files.Process () )
-                this->State = STATE_C::GO_MENU;
-            break;
-
-        default:
-            break;
-
+        PlayingN1 = true;
+        if ( this->Files.Process () )
+            {
+            Playing = false;
+            lv_obj_clear_state (pPlayButton,  LV_STATE_CHECKED);
+            OpenFile ();            // reopen the same file
+            }
+        }
+    else
+        {
+        if ( PlayingN1 )
+            {
+            PlayingN1 = false;
+            SilenceMidi ();                         // stop any sound as we are pausing.
+            }
         }
     }
 

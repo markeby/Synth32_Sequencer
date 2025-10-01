@@ -24,19 +24,19 @@ private:
     int                 NumberFiles;
     File                FileDescripter;
 
-    bool FetchDirectory (void);
+    bool FetchDirectory (String& str);
 
 
 public:
     FILE_MIDI_C     MidiF;
 
             FILES_C         (void);
-    bool    Begin           (void);
+    bool    Begin           (String& str);
     bool    OpenFile        (String& fname);
     String  FetchFileName   (int index);
     bool    Process         (void);
 
-
+    byte    GetTrackCount   (void)          { return (MidiF.getTrackCount ()); }
     };
 
 

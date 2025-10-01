@@ -42,7 +42,7 @@ FILES_C::FILES_C () : Ready(false)
     }
 
 //#######################################################################
-bool FILES_C::Begin ()
+bool FILES_C::Begin (String& str)
     {
     this->MidiF.setMidiHandler  (MidiCallback);
     this->MidiF.setSysexHandler (SysexCallback);
@@ -51,7 +51,7 @@ bool FILES_C::Begin ()
         {
         if ( SD.cardType () != CARD_NONE )
             {
-            if ( this->FetchDirectory () )
+            if ( this->FetchDirectory (str) )
                 return (true);
             }
         else
@@ -71,7 +71,7 @@ bool FILES_C::Begin ()
     }
 
 //#######################################################################
-bool FILES_C::FetchDirectory ()
+bool FILES_C::FetchDirectory (String& str)
     {
     File root = SD.open ("/");
     if ( !root )
@@ -86,14 +86,27 @@ bool FILES_C::FetchDirectory ()
         if ( !file.isDirectory () )
             {
             String st = file.name ();
-            this->FileList.push_back (st);
+            FileList.push_back (st);
             }
         file = root.openNextFile ();
         }
 
-    this->NumberFiles = this->FileList.size ();
-    if ( this->NumberFiles == 0 )
+    NumberFiles = FileList.size ();
+    if ( NumberFiles == 0 )
         return (true);
+
+    int sz = FileList.size ();
+    for ( int z = 0;  z < sz;  z++ )
+        {
+        String strt = FileList.at (z);
+
+        if ( strt.endsWith (".mid") )
+            strt.remove (strt.length () - 4);
+        str += strt;
+        if ( z != (sz - 1) )
+            str += "\n";
+        }
+
     return (false);
     }
 
@@ -103,14 +116,14 @@ bool FILES_C::OpenFile (String& fname)
     String st = "/";
     st += fname;
 
-    this->FileDescripter = SD.open (st);
+    FileDescripter = SD.open (st);
 
-    if ( !this->FileDescripter )
+    if ( !FileDescripter )
         {
         printf ("*** ERROR:  File <%s> failed to open\n", st.c_str ());
         return (true);
         }
-    if ( this->MidiF.Load (this->FileDescripter) != 0 )
+    if ( MidiF.Load (this->FileDescripter) != 0 )
         {
         printf ("\t**** failed to read midi data file\n");
         return (true);
@@ -132,9 +145,9 @@ String FILES_C::FetchFileName (int index)
 //#######################################################################
 bool FILES_C::Process ()
     {
-    if ( !this->MidiF.isEOF () )
+    if ( !MidiF.isEOF () )
         {
-        if ( this->MidiF.getNextEvent() )
+        if ( MidiF.getNextEvent() )
             return (false);                 // this executes when the metronome ticks.
         }
     else

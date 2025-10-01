@@ -81,35 +81,35 @@ class FILE_MIDI_C
 public:
     friend class FILE_TRACK_C;
 
-    FILE_MIDI_C  (void);
-    ~FILE_MIDI_C (void);
-    inline uint32_t getTickTime             (void)      { return (_tickTime); }
-    inline uint16_t getTempo                (void)      { return (_tempo); }
-    inline int16_t  getTempoAdjust          (void)      { return (_tempoDelta); }
-    inline uint16_t getTicksPerQuarterNote  (void)      { return (_ticksPerQuarterNote); }
-    inline uint16_t getTimeSignature        (void)      { return ((_timeSignature[0] << 8) + _timeSignature[1]); }
-    void setMicrosecondPerQuarterNote       (uint32_t m);
-    void setTempo                           (uint16_t t);
-    void setTempoAdjust                     (int16_t t);
-    void setTicksPerQuarterNote             (uint16_t ticks);
-    void setTimeSignature                   (uint8_t n, uint8_t d);
+             FILE_MIDI_C                    (void);
+             ~FILE_MIDI_C                   (void);
+    uint32_t getTickTime                    (void)          { return (_tickTime); }
+    uint16_t getTempo                       (void)          { return (_tempo); }
+    int16_t  getTempoAdjust                 (void)          { return (_tempoDelta); }
+    uint16_t getTicksPerQuarterNote         (void)          { return (_ticksPerQuarterNote); }
+    uint16_t getTimeSignature               (void)          { return ((_timeSignature[0] << 8) + _timeSignature[1]); }
+    void     setMicrosecondPerQuarterNote   (uint32_t m);
+    void     setTempo                       (uint16_t t);
+    void     setTempoAdjust                 (int16_t t);
+    void     setTicksPerQuarterNote         (uint16_t ticks);
+    void     setTimeSignature               (uint8_t n, uint8_t d);
 
     //--------------------------------------------------------------
-    void        close               (void);
-    bool        isEOF               (void);
-    int         Load                (File& fd);
-    inline byte getFormat           (void)                  { return (_format); };
-    inline byte getTrackCount       (void)                  { return (_trackCount); };
+    void     close              (void);
+    bool     isEOF              (void);
+    int      Load               (File& fd);
+    byte     getFormat          (void)          { return (_format); };
+    byte     getTrackCount      (void)          { return (_trackCount); };
 
     //--------------------------------------------------------------
-    void pause                      (bool bMode);
-    void restart                    (void);
-    bool getNextEvent               (void);
-    void processEvents              (uint16_t ticks);
-    inline bool isPaused            (void)                                  { return (_paused); }
-    inline void setMidiHandler      (void (*mh) (midi_event* pev))          { _midiHandler = mh; };
-    inline void setSysexHandler     (void (*sh) (sysex_event* pev))         { _sysexHandler = sh; };
-    inline void setMetaHandler      (void (*mh) (const meta_event* mev))    { _metaHandler = mh; };
+    void pause                  (bool bMode);
+    void restart                (void);
+    bool getNextEvent           (void);
+    void processEvents          (uint16_t ticks);
+    bool isPaused               (void)                                  { return (_paused); }
+    void setMidiHandler         (void (*mh) (midi_event* pev))          { _midiHandler = mh; };
+    void setSysexHandler        (void (*sh) (sysex_event* pev))         { _sysexHandler = sh; };
+    void setMetaHandler         (void (*mh) (const meta_event* mev))    { _metaHandler = mh; };
 
     FILE_TRACK_C*   _track[MIDI_MAX_TRACKS]; // track data for this file
 

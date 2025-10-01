@@ -13,7 +13,6 @@
 
 //SET_LOOP_TASK_STACK_SIZE(16 * 1024);  // 16KB
 
-
 bool        SystemError         = false;
 bool        SystemFail          = false;
 bool        SynthActive         = false;

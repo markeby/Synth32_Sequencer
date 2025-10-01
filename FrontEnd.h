@@ -5,6 +5,9 @@
 // Date:       8/16/2024
 //#######################################################################
 #pragma once
+#include <lvgl.h>
+#include <TFT_eSPI.h>
+
 #include "Files.h"
 
 //#######################################################################
@@ -25,24 +28,30 @@ enum class STATE_C: uint8_t
 class FONT_END_C
     {
 private:
-    int         Selected;
-    STATE_C     State;
-    short       TouchX;
-    short       TouchY;
-    byte        TouchError;
-    String      OpenFileName;
-    float       IdleWait;
-    FILES_C     Files;
+    // Fixed values for graphics and file list
+    lv_disp_drv_t   disp_drv;
+    lv_indev_drv_t  indev_drv;
+    lv_obj_t*       pDropDown;
+    lv_obj_t*       pPlayButton;
+    lv_style_t      FontD;
+    lv_style_t      FontButton;
+    lv_style_t      FontCurrent;
+    lv_obj_t*       pCurrentFile;
+    FILES_C         Files;
+
+    // operating state
+    String          OpenFileName;
+    bool            FileOpened;
+    bool            Playing;
+    bool            PlayingN1;
 
 public:
          FONT_END_C         (void);
     void Begin              (void);
-    void Silence            (void);
-    bool TouchIt            (void);
-    void OpenSelected       (void);
-    void PlayingSelect      (void);
-    void TrackSelect        (void);
-    void Directory          (void);
+    void SilenceMidi        (void);
+    void SetPlaying         (bool state);
+    void OpenFile           (char* name);
+    void OpenFile           (void);
     void Process            (void);
     };
 

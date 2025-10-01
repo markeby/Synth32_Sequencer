@@ -15,15 +15,15 @@ PROJECT := Synth32_Sequencer.ino
 
 # header files
 INCLUDES := Debug.h SerialMonitor.h Settings.h UpdateOTA.h FrontEnd.h \
-            FileMidi.h Files.h config.h
+            FileMidi.h Files.h config.h TouchGT911.h
 	   
 
 # source files
 SOURCES := $(PROJECT) Debug.cpp Settings.cpp Files.cpp SerialMonitor.cpp UpdateOTA.cpp \
-           FrontEnd.cpp FileMidi.cpp FileMidiTrack.cpp
+           FrontEnd.cpp FileMidi.cpp FileMidiTrack.cpp TouchGT911.cpp
 
 # serial port for uploading
-DEFAULT_PORT := COM15
+DEFAULT_PORT := COM8
 
 # IP address for uploading
 UPLOAD_OTA := 192.168.2.22

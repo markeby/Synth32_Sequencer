@@ -125,6 +125,7 @@
             <F N="FrontEnd.cpp"/>
             <F N="SerialMonitor.cpp"/>
             <F N="Settings.cpp"/>
+            <F N="TouchGT911.cpp"/>
             <F N="UpdateOTA.cpp"/>
         </Folder>
         <Folder
@@ -136,14 +137,18 @@
             <F N="FileMidi.h"/>
             <F N="Files.h"/>
             <F N="FrontEnd.h"/>
+            <F N="lv_conf.h"/>
             <F N="SerialMonitor.h"/>
             <F N="Settings.h"/>
+            <F N="TouchGT911.h"/>
             <F N="UpdateOTA.h"/>
         </Folder>
         <Folder
             Name="Tools"
             Filters="*.py"
             GUID="{3935C99B-B3E5-41A0-9D1B-CAEB26422F2D}">
+            <F N=".gitignore"/>
+            <F N="adr.bat"/>
             <F
                 N="Makefile"
                 Type="Makefile"/>
