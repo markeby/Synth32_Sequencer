@@ -1,3 +1,9 @@
+//#######################################################################
+// Module:     SerialMonitor.h
+// Descrption: Serial control for setup and debug
+// Creator:    markeby
+// Date:       9/4/2023
+//#######################################################################
 #pragma once
 
 namespace SERIAL_MONITOR

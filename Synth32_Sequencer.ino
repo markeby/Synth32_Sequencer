@@ -5,6 +5,7 @@
 //#######################################################################
 #include <Arduino.h>
 
+#include "Debug.h"
 #include "Settings.h"
 #include "SerialMonitor.h"
 #include "Files.h"
@@ -72,8 +73,9 @@ inline bool TickTime (void)
 //#######################################################################
 void setup (void)
     {
-    bool fault = false;
     Serial.begin (115200);
+    BootDebug ();  // Pause here so that init of serial port in the monitor class can complete on power up
+    printf ("\n\t>>> Startup of Midi32 %s %s\n", __DATE__, __TIME__);
 
     printf ("\t>>> Start Settings config...\n");
     Settings.Begin ();    // System settings

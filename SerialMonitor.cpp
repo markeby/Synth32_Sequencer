@@ -1,5 +1,5 @@
 //#######################################################################
-// Module:     SerialMonitor.ino
+// Module:     SerialMonitor.cpp
 // Descrption: Serial control for setup and debug
 // Creator:    markeby
 // Date:       9/4/2023
@@ -12,6 +12,8 @@
 #include "Files.h"
 #include "FileMidi.h"
 #include "UpdateOTA.h"
+#include "FrontEnd.h"
+
 using namespace SERIAL_MONITOR;
 
 //#######################################################################
@@ -80,29 +82,29 @@ bool MONITOR_C::Save (SMODE m)
     switch ( m )
         {
         case INSSID:
-            Settings.PutSSID (this->InputString);
+            Settings.PutSSID (InputString);
             break;
         case INPWD:
-            Settings.PutPasswd (this->InputString);
+            Settings.PutPasswd (InputString);
             break;
         default:
             break;
         }
 
-    this->InputString.clear ();
+    InputString.clear ();
     return (true);
     }
 
 //#######################################################################
 void MONITOR_C::InputPrompt (const char* text)
     {
-    Serial << "\n\n" << text << " >" << this->InputString;
+    Serial << "\n\n" << text << " >" << InputString;
     }
 
 //#######################################################################
 void MONITOR_C::Tuning ()
     {
-    this->Menu ();
+    Menu ();
     }
 
 //#######################################################################
@@ -122,15 +124,15 @@ bool MONITOR_C::PromptZap (void)
         {
         case 'y':
         case 'Y':
-            switch ( this->InputMode )
+            switch ( InputMode )
                 {
                 case ZAP1:
                     Settings.ClearAllSynth();
                     Serial << 9 << endl << "\nCleared System settings." << endl;
-                    this->Reset ("Reset after clearing settings");
+                    Reset ("Reset after clearing settings");
                     break;
                 case ZAP2:
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
                 default:
                     break;
@@ -173,7 +175,7 @@ void MONITOR_C::MenuSel (void)
                 case 126:           // 0x7E
                     if ( funct == 3 )
                         {
-                        this->Reset ("F12 reset");
+                        Reset ("F12 reset");
                         }
                     break;
                 case 0x41:          // arrow up
@@ -191,50 +193,52 @@ void MONITOR_C::MenuSel (void)
         return;
         }
 
-    switch ( this->InputMode )
+    switch ( InputMode )
         {
         case CMD:
             switch ( s )
                 {
                 case 's':
                     Serial << endl;
-                    this->DumpStats ();
-                    this->Mode (MENU);
+                    DumpStats ();
+                    Mode (MENU);
                     break;
                 case 'd':
                     Settings.SaveDebugFlags ();
                     Serial << "  Saving debug flags" << endl;
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
                 case '1':
                     DebugState  = !DebugState;
                     Serial << "  MIDI debugging " << (( DebugState ) ? "Enabled" : "Disabled") << endl;
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
                 case '2':
                     DebugMidiFile  = !DebugMidiFile;
                     Serial << "  MIDI file processing " << (( DebugMidiFile ) ? "Enabled" : "Disabled") << endl;
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
                 case '3':
                     DebugMidi  = !DebugMidi;
                     Serial << "  MIDI Interface " << (( DebugMidi ) ? "Enabled" : "Disabled") << endl;
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
-
                 case 'S':
-                    this->InputString = Settings.GetSSID ();
-                    this->InputPrompt ("  Enter SSID");
-                    this->Mode (INSSID);
+                    InputString = Settings.GetSSID ();
+                    InputPrompt ("  Enter SSID");
+                    Mode (INSSID);
                     break;
                 case 'P':
-                    this->InputString = Settings.GetPasswd ();
-                    this->InputPrompt ("  Enter PWD");
-                    this->Mode (INPWD);
+                    InputString = Settings.GetPasswd ();
+                    InputPrompt ("  Enter PWD");
+                    Mode (INPWD);
                     break;
                 case 'C':
-                    this->InputPrompt ("  Clearing Synth settings");
-                    this->Mode (ZAP1);
+                    InputPrompt ("  Clearing Synth settings");
+                    Mode (ZAP1);
+                    break;
+                case 't':           // track info dump
+                    Serial << endl << FrontEnd.DumpMeta ().c_str () << endl;
                     break;
                 case 'z':           // Test function #1
                     break;
@@ -249,7 +253,7 @@ void MONITOR_C::MenuSel (void)
                     break;
                 default:
                     Serial << "       ??" << endl;
-                    this->Mode (MENU);
+                    Mode (MENU);
                     break;
                 }
             break;
@@ -267,6 +271,7 @@ void MONITOR_C::Menu (void)
     Serial << StateDebug (DebugMidi)     << "\t3   - Debug MIDI interface" << endl;
     Serial << "\ts   - Dump process Stats" << endl;
     Serial << "\td   - Save debug flags" << endl;
+    Serial << "\tt   - Track info dump" << endl;
     Serial << "\n";
     Serial << "\tz   - Test function #1" << endl;
     Serial << "\tx   - Test function #2" << endl;
@@ -286,24 +291,24 @@ void MONITOR_C::TextIn (void)
     switch ( in_char )
         {
         case '\r':              // return (enter)
-            if ( this->Save (this->InputMode) )
-                this->Mode (MENU);
+            if ( Save (InputMode) )
+                Mode (MENU);
             break;
         case (char)127:         // backspace
-            if ( this->InputString.length () )
+            if ( InputString.length () )
                 {
                 Serial << (char)8 << ' ' << (char)8;
-                this->InputString.remove (this->InputString.length () - 1);
+                InputString.remove (InputString.length () - 1);
                 }
             break;
         case (char)27:          // escape for exit with no change
-            this->Mode (MENU);
+            Mode (MENU);
             break;
         case '\t':              // Tab for special loops
-            this->Save (this->InputMode);
+            Save (InputMode);
             break;
         default:                // all other characters go into string
-            this->InputString += in_char;
+            InputString += in_char;
             Serial << in_char;
             break;
         }
@@ -312,20 +317,21 @@ void MONITOR_C::TextIn (void)
 //#######################################################################
 MONITOR_C::MONITOR_C (void)
     {
-    this->InputString = "";
-    this->InputMode   = MENU;
+    InputString = "";
+    InputMode   = MENU;
     }
 
 //#######################################################################
 MONITOR_C::~MONITOR_C (void)
     {
+    Serial.begin (115200);
     }
 
 //#######################################################################
 void MONITOR_C::Begin (void)
     {
     Serial.begin (115200);
-    this->DumpStats ();
+    DumpStats ();
     Serial << "\n\n\nHow the hell did I get here?\n\n\n";
     }
 
@@ -338,23 +344,23 @@ bool MONITOR_C::Detect (void)
 //#######################################################################
 void MONITOR_C::Loop (void)
     {
-    if ( this->InputMode != MENU )
+    if ( InputMode != MENU )
         {
         while ( Serial.available () )
             {
-            switch ( this->InputMode )
+            switch ( InputMode )
                 {
                 case CMD:
-                    this->MenuSel ();
+                    MenuSel ();
                     break;
                 case INSSID:
                 case INPWD:
-                    this->TextIn ();
+                    TextIn ();
                     break;
                 case ZAP1:
                 case ZAP2:
-                    if ( this->PromptZap () )
-                        this->Mode(MENU);
+                    if ( PromptZap () )
+                        Mode(MENU);
                     break;
                 default:
                     break;
@@ -363,8 +369,8 @@ void MONITOR_C::Loop (void)
         }
     else
         {
-        this->Menu ();
-        this->Mode (CMD);
+        Menu ();
+        Mode (CMD);
         }
     }
 

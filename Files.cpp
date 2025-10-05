@@ -6,11 +6,14 @@
 //#######################################################################
 #include "Files.h"
 
+//#####################################
+//    Located in FrontEnd.cpp
+//#####################################
 extern void MidiCallback  (midi_event *pev);
 extern void SysexCallback (sysex_event *pev);
 
 //#######################################################################
-uint32_t readMultiByte (File& fd, uint8_t len)
+uint32_t ReadMultiByte (File& fd, uint8_t len)
     {
     uint32_t  val = 0;
 
@@ -20,7 +23,7 @@ uint32_t readMultiByte (File& fd, uint8_t len)
     }
 
 //#######################################################################
-uint32_t readVarLen (File& fd)
+uint32_t ReadVarLen (File& fd)
     {
     uint32_t  val = 0;
     uint8_t   zc;
@@ -34,9 +37,8 @@ uint32_t readVarLen (File& fd)
 
 //#######################################################################
 //#######################################################################
-FILES_C::FILES_C () : Ready(false)
+FILES_C::FILES_C ()
     {
-    this->Ready = false;
     FileList.clear ();
     NumberFiles = 0;
     }
@@ -44,30 +46,31 @@ FILES_C::FILES_C () : Ready(false)
 //#######################################################################
 bool FILES_C::Begin (String& str)
     {
-    this->MidiF.setMidiHandler  (MidiCallback);
-    this->MidiF.setSysexHandler (SysexCallback);
+    bool rc = false;
+
+    MidiF.setMidiHandler  (MidiCallback);
+    MidiF.setSysexHandler (SysexCallback);
 
     if ( SD.begin() )
         {
         if ( SD.cardType () != CARD_NONE )
             {
             if ( this->FetchDirectory (str) )
-                return (true);
+                rc = true;
             }
         else
             {
             printf ("\t**** No SD card found\n");
-            return (true);
+            rc = true;
             }
         }
     else
         {
         printf ("\t**** SD card failed to initialize\n");
-        return (true);
+        rc = true;
         }
-    Ready = true;
 
-    return (false);
+    return (rc);
     }
 
 //#######################################################################
@@ -115,6 +118,8 @@ bool FILES_C::OpenFile (String& fname)
     {
     String st = "/";
     st += fname;
+
+    MidiF.close ();
 
     FileDescripter = SD.open (st);
 

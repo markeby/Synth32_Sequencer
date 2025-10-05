@@ -1,6 +1,6 @@
 //#######################################################################
 // Module:     FrontEnd.h
-// Descrption:  Front end processing for sequencer
+// Descrption: Front end processing for sequencer
 // Creator:    markeby
 // Date:       8/16/2024
 //#######################################################################
@@ -8,21 +8,8 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 
+#include "Config.h"
 #include "Files.h"
-
-//#######################################################################
-enum class STATE_C: uint8_t
-        {
-        GO_MENU = 0,
-        GO_PLAY,
-        MENU,
-        TRACK,
-        PLAY,
-        PAUSE,
-        STOP,
-        END,
-        };
-
 
 //#######################################################################
 class FONT_END_C
@@ -42,17 +29,18 @@ private:
     // operating state
     String          OpenFileName;
     bool            FileOpened;
-    bool            Playing;
-    bool            PlayingN1;
+
+    void    Restart     (void);
 
 public:
-         FONT_END_C         (void);
-    void Begin              (void);
-    void SilenceMidi        (void);
-    void SetPlaying         (bool state);
-    void OpenFile           (char* name);
-    void OpenFile           (void);
-    void Process            (void);
+    bool            MetaDataDone;
+
+            FONT_END_C  (void);
+    void    Begin       (void);
+    void    SetPlaying  (bool state);
+    void    OpenFile    (char* name);
+    void    Process     (void);
+    String  DumpMeta    (void)  { return (Files.MidiF.metaDataString ()); }
     };
 
 //#######################################################################

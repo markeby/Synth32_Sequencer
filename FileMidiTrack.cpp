@@ -1,7 +1,14 @@
+//#######################################################################
+// Module:     FileMidiTrack.cpp
+// Descrption: MIDI track processing
+// Creator:    markeby
+// Date:       8/16/2024
+//#######################################################################
 #include <string.h>
 #include "config.h"
 #include "FileMidi.h"
 #include "Files.h"
+#include "FrontEnd.h"
 #include "Debug.h"
 
 static const char* Label = "T";
@@ -10,10 +17,13 @@ static const char* Label = "T";
 //#######################################################################
 void FILE_TRACK_C::reset (void)
     {
-    this->_length = 0;        // length of track in bytes
-    this->_startOffset = 0;   // start of the track in bytes from start of file
-    this->restart();
-    this->_trackId = 255;
+    _length = 0;        // length of track in bytes
+    _startOffset = 0;   // start of the track in bytes from start of file
+    Restart ();
+    _trackId = 255;
+    _metaEvent.size = 0;
+    _metaEvent.type = 0;
+    memset (_metaEvent.data,  0,  TRACK_SIZE);
     }
 
 //#######################################################################
@@ -28,28 +38,14 @@ FILE_TRACK_C::~FILE_TRACK_C ()
     }
 
 //#######################################################################
-// size of track in bytes
-uint32_t FILE_TRACK_C::getLength (void)
-    {
-    return _length;
-    }
-
-//#######################################################################
-// true if end of track has been reached
-bool FILE_TRACK_C::getEndOfTrack (void)
-    {
-    return _endOfTrack;
-    }
-
-//#######################################################################
-void FILE_TRACK_C::syncTime (void)
+void FILE_TRACK_C::SyncTime (void)
     {
     _elapsedTicks = 0;
     }
 
 //#######################################################################
 // Start playing the track from the beginning again
-void FILE_TRACK_C::restart (void)
+void FILE_TRACK_C::Restart (void)
     {
     this->_currOffset = 0;
     this->_endOfTrack = false;
@@ -63,7 +59,7 @@ bool FILE_TRACK_C::getNextEvent (uint16_t tickCount)
     uint32_t deltaT;
 
     // is there anything to process?
-    if ( this->_endOfTrack )
+    if ( _endOfTrack )
         return (false);
 
     // move the file pointer to where we left off
@@ -75,7 +71,7 @@ bool FILE_TRACK_C::getNextEvent (uint16_t tickCount)
 
     // Get the DeltaT from the file in order to see if enough ticks have
     // passed for the event to be active.
-    deltaT = readVarLen (_fd);
+    deltaT = ReadVarLen (_fd);
 
     // If not enough ticks, just return without saving the file pointer and
     // we will go back to the same spot next time.
@@ -87,7 +83,7 @@ bool FILE_TRACK_C::getNextEvent (uint16_t tickCount)
     // giving positive biased errors every time.
     _elapsedTicks -= deltaT;
 
-    parseEvent ();
+    parseEvent ( _fd.read ());
 
     // remember the offset for next time
     _currOffset = _fd.position () - _startOffset;
@@ -102,12 +98,45 @@ bool FILE_TRACK_C::getNextEvent (uint16_t tickCount)
     }
 
 //#######################################################################
+// raw fetch
+bool FILE_TRACK_C::getNextEvent ()
+    {
+    uint32_t deltaT;
+
+    // is there anything to process?
+    if ( _endOfTrack )
+        return (false);
+
+    // move the file pointer to where we left off
+    _fd.seek (_startOffset + _currOffset);
+
+    // Get the DeltaT from the file
+    deltaT = ReadVarLen (_fd);
+
+    uint8_t etype = _fd.read ();
+    switch ( etype )
+        {
+        case 0x80 ... 0x9f:
+            _endOfTrack = true;
+            break;
+        default:
+            parseEvent (etype);
+            break;
+        }
+    // remember the offset for next time
+    _currOffset = _fd.position () - _startOffset;
+
+    // catch end of track when there is no META event
+    _endOfTrack = _endOfTrack || (_currOffset >= _length);
+    return (true);
+    }
+
+//#######################################################################
 // process the event from the physical file
-void FILE_TRACK_C::parseEvent ()
+void FILE_TRACK_C::parseEvent (uint8_t etype)
     {
     uint32_t mLen;
 
-    uint8_t etype = _fd.read();
     switch ( etype )
         {
         // ---------------------------- MIDI
@@ -157,6 +186,7 @@ void FILE_TRACK_C::parseEvent ()
             // Hence start saving the data at byte data[1] with the byte we have just read (eType)
             // and use the size member to determine how large the message is (ie, same as before).
             DBG ("Run on mesg %X size d", etype, _mev.size);
+
             _mev.data[1] = etype;
             for ( byte z = 2;  z < _mev.size;  z++ )
                 _mev.data[z] = _fd.read ();  // next byte
@@ -175,7 +205,7 @@ void FILE_TRACK_C::parseEvent ()
 
             // collect all the bytes until the 0xf7 - boundaries are included in the message
             sev.track = _trackId;
-            mLen = readVarLen (_fd);
+            mLen = ReadVarLen (_fd);
             sev.size = mLen;
             if ( etype == 0xF0 )       // add space for 0xF0
                 {
@@ -201,7 +231,7 @@ void FILE_TRACK_C::parseEvent ()
              meta_event mev;
 
              etype = _fd.read ();
-             mLen =  readVarLen (_fd);
+             mLen =  ReadVarLen (_fd);
 
              mev.track = _trackId;
              mev.size = mLen;
@@ -215,7 +245,7 @@ void FILE_TRACK_C::parseEvent ()
 
                  case 0x51:  // set Tempo - really the microseconds per tick
                      {
-                     uint32_t val = readMultiByte (_fd, 3);
+                     uint32_t val = ReadMultiByte (_fd, 3);
 
                      _mf.setMicrosecondPerQuarterNote (val);
 
@@ -273,7 +303,7 @@ void FILE_TRACK_C::parseEvent ()
 
                  case 0x00:  // Sequence Number
                      {
-                     uint16_t x = readMultiByte (_fd, 2);
+                     uint16_t x = ReadMultiByte (_fd, 2);
 
                      mev.data[0] = (x >> 8) & 0xFF;
                      mev.data[1] = x & 0xFF;
@@ -282,12 +312,12 @@ void FILE_TRACK_C::parseEvent ()
                      break;
 
                  case 0x20:  // Channel Prefix
-                     mev.data[0] = readMultiByte (_fd, 1);
+                     mev.data[0] = ReadMultiByte (_fd, 1);
                      DBG ("Channel prefix %d", mev.data[0]);
                      break;
 
                  case 0x21:  // Port Prefix
-                     mev.data[0] = readMultiByte (_fd, 1);
+                     mev.data[0] = ReadMultiByte (_fd, 1);
                      DBG ("Port prefix %d", mev.data[0]);
                      break;
 
@@ -302,6 +332,8 @@ void FILE_TRACK_C::parseEvent ()
                      if ( mLen > ARRAY_SIZE (mev.data) )
                          _fd.seek (mLen - ARRAY_SIZE (mev.data));
                      DBG ("Array <%s>", mev.chars);
+                     if ( etype == 3 )
+                         _metaEvent = mev;
                      }
                      break;
                  }
@@ -334,7 +366,7 @@ int FILE_TRACK_C::load (uint8_t trackId)
 
     // Row read track chunk size and in bytes. This is not really necessary
     // since the track MUST end with an end of track meta event.
-    dat32 = readMultiByte(_fd, 4);
+    dat32 = ReadMultiByte(_fd, 4);
     _length = dat32;
 
     // save where we are in the file as this is the start of offset for this track
@@ -348,5 +380,21 @@ int FILE_TRACK_C::load (uint8_t trackId)
         return (1);
 
     return (-1);
+    }
+
+//#######################################################################
+String FILE_TRACK_C::metaDataString ()
+    {
+    String str;
+
+    if ( _trackId < 10 )
+        str = " ";
+    str += String(_trackId);
+    str += ": ";
+    if ( _metaEvent.size > 0 )
+        str += _metaEvent.chars;
+    DBG ("Meta String:  %s", str.c_str ());
+    str += "\n";
+    return (str);
     }
 

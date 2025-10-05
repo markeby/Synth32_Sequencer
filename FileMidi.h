@@ -1,6 +1,12 @@
-
+//#######################################################################
+// Module:     FileMidi.cpp
+// Descrption: MIDI file top level processing
+// Creator:    markeby
+// Date:       8/16/2024
+//#######################################################################
 #pragma once
 #include <FS.h>
+#include "Config.h"
 
 #define MIDI_MAX_TRACKS     32
 #define TRACK_PRIORITY      1
@@ -52,18 +58,19 @@ private:
     FILE_MIDI_C&    _mf;
 
 public:
-          FILE_TRACK_C  (File& fd, FILE_MIDI_C& mf);
-         ~FILE_TRACK_C (void);
-    bool      getEndOfTrack (void);
-    uint32_t  getLength     (void);
-    void      close         (void);
-    bool      getNextEvent  (uint16_t tickCount);
-    int       load          (uint8_t trackId);
-    void      restart       (void);
-    void      syncTime      (void);
+          FILE_TRACK_C          (File& fd, FILE_MIDI_C& mf);
+         ~FILE_TRACK_C          (void);
+    bool      getEndOfTrack     (void)              { return (_endOfTrack); }
+    uint32_t  GetLength         (void)              { return (_length); }
+    bool      getNextEvent      (uint16_t tickCount);
+    bool      getNextEvent      (void);
+    int       load              (uint8_t trackId);
+    void      Restart           (void);
+    void      SyncTime          (void);
+    String    metaDataString    (void);
 
 protected:
-    void      parseEvent    (void);
+    void      parseEvent    (uint8_t etype);
     void      reset         (void);
 
     byte        _trackId;       // the id for this track
@@ -73,6 +80,7 @@ protected:
     bool        _endOfTrack;    // true when we have reached end of track or we have encountered an undefined event
     uint32_t    _elapsedTicks;  // the total number of elapsed ticks since last event
     midi_event  _mev;           // data for MIDI callback function - persists between calls for run-on messages
+    meta_event  _metaEvent;     // The meta data for this track
     };
 
 //#######################################################################
@@ -98,12 +106,15 @@ public:
     void     close              (void);
     bool     isEOF              (void);
     int      Load               (File& fd);
-    byte     getFormat          (void)          { return (_format); };
-    byte     getTrackCount      (void)          { return (_trackCount); };
+    void     LoadMeta           (void);
+    byte     GetFormat          (void)          { return (_format); };
+    byte     GetTrackCount      (void)          { return (_trackCount); };
+    String   metaDataString     (void);
 
     //--------------------------------------------------------------
-    void pause                  (bool bMode);
-    void restart                (void);
+    void StartClocking          (void);
+    void pause                  (bool state);
+    void Restart                (void);
     bool getNextEvent           (void);
     void processEvents          (uint16_t ticks);
     bool isPaused               (void)                                  { return (_paused); }
@@ -134,6 +145,5 @@ protected:
     uint16_t    _tempo;                 // tempo for this file in beats per minute
     int16_t     _tempoDelta;            // tempo offset adjustment in beats per minute
     uint8_t     _timeSignature[2];      // time signature [0] = numerator, [1] = denominator
-
     };
 

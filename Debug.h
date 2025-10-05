@@ -25,7 +25,9 @@ inline void DebugMsgData   (uint32_t data)                   {DebugMsgDataF(data
 inline void DebugMsgData   (int data)                        {DebugMsgDataF(data,0);}
 inline void DebugMsgDataN  (uint32_t data)                   {DebugMsgDataF(data,0);}
 
+void  BootDebug      (void);
 
+#define ANYKEY  {printf("--- %s:%d\n",__FILE__,__LINE__);while(!Serial.available ()) continue;char s=Serial.read();}
 #define DbgD(d) {printf("==> %s:%d %s = %d\n",__FILE__,__LINE__, #d, d);}
 #define DbgX(x) {printf("==> %s:%d %s = 0x%X\n",__FILE__,__LINE__, #x, x);}
 #define DbgF(f) {printf("==> %s:%d %s = %f\n",__FILE__,__LINE__, #f, f);}

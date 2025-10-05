@@ -5,7 +5,6 @@
 // Date:       8/1/2022
 //#######################################################################
 #pragma once
-
 #include <Preferences.h>
 #include "config.h"
 

@@ -12,14 +12,13 @@
 #include "config.h"
 #include "FileMidi.h"
 
-uint32_t readMultiByte  (File& fd, uint8_t len);
-uint32_t readVarLen     (File& fd);
+uint32_t ReadMultiByte  (File& fd, uint8_t len);
+uint32_t ReadVarLen     (File& fd);
 
 //#######################################################################
 class FILES_C
     {
 private:
-    bool                Ready;
     std::deque<String>  FileList;
     int                 NumberFiles;
     File                FileDescripter;
@@ -35,8 +34,6 @@ public:
     bool    OpenFile        (String& fname);
     String  FetchFileName   (int index);
     bool    Process         (void);
-
-    byte    GetTrackCount   (void)          { return (MidiF.getTrackCount ()); }
     };
 
 

@@ -6,7 +6,7 @@
     WorkingDir="."
     VCSProject="Git:">
     <Config
-        Name="TestBuild"
+        Name="Build Serial load"
         Type="cpp"
         DebugCallbackName="gdb"
         OutputFile=""
@@ -21,7 +21,7 @@
                 ClearProcessBuffer="1"
                 Verbose="1"
                 Beep="1">
-                <Exec CmdLine="ptime make Midi32_serial"/>
+                <Exec CmdLine="ptime make Serial"/>
             </Target>
             <Target
                 Name="Monitor"
@@ -29,7 +29,7 @@
                 RunFromDir="%rw"
                 CaptureOutputWith="ProcessBuffer"
                 SaveOption="SaveNone">
-                <Exec CmdLine="arduino-cli monitor -p COM3 -c baudrate=115200"/>
+                <Exec CmdLine="arduino-cli monitor -p COM6 -c baudrate=115200"/>
             </Target>
             <Target
                 Name="Build-monitor"
@@ -48,12 +48,12 @@
                 CaptureOutputWith="ProcessBuffer"
                 SaveOption="SaveWorkspaceFiles"
                 ClearProcessBuffer="1">
-                <Exec CmdLine="make clean &amp; make Midi32_Serial"/>
+                <Exec CmdLine="make clean &amp; make Serial"/>
             </Target>
         </Menu>
     </Config>
     <Config
-        Name="ReleaseBuild"
+        Name="Build OTA load"
         Type="cpp"
         DebugCallbackName="gdb"
         OutputFile=""
@@ -68,7 +68,7 @@
                 ClearProcessBuffer="1"
                 Verbose="1"
                 Beep="1">
-                <Exec CmdLine="pbench make Midi32_OTA"/>
+                <Exec CmdLine="pbench make OTA"/>
             </Target>
             <Target
                 Name="Monitor"
@@ -76,7 +76,7 @@
                 RunFromDir="%rw"
                 CaptureOutputWith="ProcessBuffer"
                 SaveOption="SaveNone">
-                <Exec CmdLine="arduino-cli monitor -p COM3 -c baudrate=115200"/>
+                <Exec CmdLine="arduino-cli monitor -p COM6 -c baudrate=115200"/>
             </Target>
             <Target
                 Name="Build-monitor"
@@ -95,7 +95,7 @@
                 CaptureOutputWith="ProcessBuffer"
                 SaveOption="SaveWorkspaceFiles"
                 ClearProcessBuffer="1">
-                <Exec CmdLine="make clean &amp; pbench make Midi32_OTA"/>
+                <Exec CmdLine="make clean &amp; pbench make OTA"/>
             </Target>
         </Menu>
     </Config>

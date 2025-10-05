@@ -23,7 +23,7 @@ SOURCES := $(PROJECT) Debug.cpp Settings.cpp Files.cpp SerialMonitor.cpp UpdateO
            FrontEnd.cpp FileMidi.cpp FileMidiTrack.cpp TouchGT911.cpp
 
 # serial port for uploading
-DEFAULT_PORT := COM8
+DEFAULT_PORT := COM6
 
 # IP address for uploading
 UPLOAD_OTA := 192.168.2.22
@@ -86,12 +86,12 @@ endif
 ############################################
 # User input targets
 ############################################
-PHONY: monitor clean
-
-Midi32_OTA :
+PHONY: Serial OTA monitor clean
+    
+OTA :
 	@$(MAKE) target OTA=$(UPLOAD_OTA)
 
-Midi32_Serial :
+Serial :
 	@$(MAKE) target PT=$(SERIAL_PORT)
 
 monitor :
